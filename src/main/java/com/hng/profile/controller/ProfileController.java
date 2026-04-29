@@ -1,5 +1,6 @@
 package com.hng.profile.controller;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -63,11 +64,18 @@ public class ProfileController {
         filters.minAge, filters.maxAge, null, null,
         null, null, page, limit);
 
-    PaginatedResponse response = new PaginatedResponse(
-        "success", page, profilePage.getSize(),
-        profilePage.getTotalElements(), profilePage.getContent());
+    Map<String, String> links = new HashMap<>();
+    links.put("self", "/api/profiles/search?q=" + q + "&page=" + page + "&limit=" + limit);
+    if (page < profilePage.getTotalPages()) {
+      links.put("next", "/api/profiles/search?q=" + q + "&page=" + (page + 1) + "&limit=" + limit);
+    }
+
+    PaginationMeta meta = new PaginationMeta(
+        page, limit, profilePage.getTotalElements(), profilePage.getTotalPages(), links);
+    PaginatedResponse response = new PaginatedResponse(profilePage.getContent(), meta);
 
     return ResponseEntity.ok(response);
+
   }
 
   // Advanced Filtering + Sorting + Pagination
@@ -84,16 +92,22 @@ public class ProfileController {
       @RequestParam(required = false) String order,
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "10") int limit) {
-
     Page<Profile> profilePage = profileService.getProfiles(
         gender, ageGroup, countryId, minAge, maxAge, minGenderProb, minCountryProb,
         sortBy, order, page, limit);
 
-    PaginatedResponse response = new PaginatedResponse(
-        "success", page, profilePage.getSize(),
-        profilePage.getTotalElements(), profilePage.getContent());
+    Map<String, String> links = new HashMap<>();
+    links.put("self", "/api/profiles?page=" + page + "&limit=" + limit);
+    if (page < profilePage.getTotalPages()) {
+      links.put("next", "/api/profiles?page=" + (page + 1) + "&limit=" + limit);
+    }
+
+    PaginationMeta meta = new PaginationMeta(
+        page, limit, profilePage.getTotalElements(), profilePage.getTotalPages(), links);
+    PaginatedResponse response = new PaginatedResponse(profilePage.getContent(), meta);
 
     return ResponseEntity.ok(response);
+
   }
 
   @GetMapping("/{id}")
@@ -110,8 +124,16 @@ public class ProfileController {
   }
 }
 
-// Paginated response DTO
+// Enterprise Paginated Response DTOs
 record PaginatedResponse(
-    String status, int page, int limit, long total,
-    List<Profile> data) {
+    List<Profile> data,
+    PaginationMeta meta) {
+}
+
+record PaginationMeta(
+    int page,
+    int size,
+    long total_elements,
+    int total_pages,
+    Map<String, String> links) {
 }
