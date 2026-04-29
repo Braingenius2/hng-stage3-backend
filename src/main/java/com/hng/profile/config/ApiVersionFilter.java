@@ -18,7 +18,7 @@ public class ApiVersionFilter extends OncePerRequestFilter {
 
     // We only care about checking the header for our API and Auth endpoints
     String path = request.getRequestURI();
-    if (path.startsWith("/api/") || path.startsWith("/auth/")) {
+    if (path.startsWith("/api") || path.startsWith("/auth")) {
 
       String apiVersion = request.getHeader("X-API-Version");
 

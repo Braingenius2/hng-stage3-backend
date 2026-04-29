@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import java.util.Map;
 
 @ControllerAdvice
@@ -32,10 +33,16 @@ public class GlobalExceptionHandler {
     return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
   }
 
+  @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+  public ResponseEntity<Object> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+    return buildErrorResponse(HttpStatus.METHOD_NOT_ALLOWED, "Method not allowed");
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Object> handleGeneralException(Exception ex) {
     return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Server failure");
   }
+
 
   private ResponseEntity<Object> buildErrorResponse(HttpStatus status, String message) {
     return ResponseEntity.status(status).body(Map.of(

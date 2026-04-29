@@ -21,10 +21,10 @@ import java.util.Optional;
 @Service
 public class AuthService {
 
-  @Value("${github.client.id:dummy_id}")
+  @Value("${spring.security.oauth2.client.registration.github.client-id}")
   private String clientId;
 
-  @Value("${github.client.secret:dummy_secret}")
+  @Value("${spring.security.oauth2.client.registration.github.client-secret}")
   private String clientSecret;
 
   @Value("${admin.github.ids:}")
@@ -76,7 +76,7 @@ public class AuthService {
     RefreshToken refreshToken = new RefreshToken();
     refreshToken.setUser(user);
     refreshToken.setToken(refreshTokenString);
-    refreshToken.setExpiryDate(Instant.now().plusMillis(5 * 60 * 1000)); // 5 mins
+    refreshToken.setExpiryDate(Instant.now().plus(java.time.Duration.ofDays(7)));
     refreshTokenRepository.save(refreshToken);
 
     return Map.of("access_token", accessToken, "refresh_token", refreshTokenString);
@@ -111,7 +111,7 @@ public class AuthService {
     RefreshToken newRefreshToken = new RefreshToken();
     newRefreshToken.setUser(user);
     newRefreshToken.setToken(newRefreshTokenString);
-    newRefreshToken.setExpiryDate(Instant.now().plusMillis(5 * 60 * 1000));
+    newRefreshToken.setExpiryDate(Instant.now().plus(java.time.Duration.ofDays(7)));
     refreshTokenRepository.save(newRefreshToken);
 
     return Map.of("access_token", newAccessToken, "refresh_token", newRefreshTokenString);

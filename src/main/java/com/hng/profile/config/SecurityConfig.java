@@ -10,6 +10,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import com.hng.profile.security.RateLimitFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -17,10 +19,17 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 public class SecurityConfig {
 
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final ApiVersionFilter apiVersionFilter;
+  private final RateLimitFilter rateLimitFilter;
 
-  public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+  public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, 
+                        ApiVersionFilter apiVersionFilter,
+                        RateLimitFilter rateLimitFilter) {
     this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    this.apiVersionFilter = apiVersionFilter;
+    this.rateLimitFilter = rateLimitFilter;
   }
+
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -28,14 +37,29 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .exceptionHandling(ex -> ex
+            .authenticationEntryPoint((request, response, authException) -> {
+                response.setStatus(401);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"status\":\"error\",\"message\":\"Unauthorized\"}");
+            })
+            .accessDeniedHandler((request, response, accessDeniedException) -> {
+                response.setStatus(403);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"status\":\"error\",\"message\":\"Forbidden\"}");
+            })
+        )
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/auth/**").permitAll()
-            .requestMatchers("/api/**").authenticated()
+            .requestMatchers(new AntPathRequestMatcher("/auth/**")).permitAll()
+            .requestMatchers(new AntPathRequestMatcher("/api/**")).authenticated()
             .anyRequest().permitAll())
+        .addFilterBefore(apiVersionFilter, UsernamePasswordAuthenticationFilter.class)
+        .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
   }
+
 
   @Bean
   public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
