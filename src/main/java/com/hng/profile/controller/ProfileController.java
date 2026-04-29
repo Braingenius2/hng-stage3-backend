@@ -140,15 +140,23 @@ public class ProfileController {
     // Write the data to the response using Commons CSV
     try (PrintWriter writer = response.getWriter();
          CSVPrinter csvPrinter = new CSVPrinter(writer, 
-            CSVFormat.DEFAULT.builder().setHeader("ID", "Name", "Gender", "Age", "Country").build())) {
+            CSVFormat.DEFAULT.builder().setHeader(
+                "id", "name", "gender", "gender_probability", "age", "age_group",
+                "country_id", "country_name", "country_probability", "created_at"
+            ).build())) {
          
         for (Profile profile : profilePage.getContent()) {
             csvPrinter.printRecord(
                 profile.getId(),
                 profile.getName(),
                 profile.getGender(),
+                profile.getGenderProbability(),
                 profile.getAge(),
-                profile.getCountryId()
+                profile.getAgeGroup(),
+                profile.getCountryId(),
+                profile.getCountryName(),
+                profile.getCountryProbability(),
+                profile.getCreatedAt()
             );
         }
     }
