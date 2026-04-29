@@ -1,10 +1,15 @@
 package com.hng.profile.controller;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import jakarta.servlet.http.HttpServletResponse;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -108,6 +113,45 @@ public class ProfileController {
 
     return ResponseEntity.ok(response);
 
+  }
+
+  @GetMapping("/export")
+  public void exportProfiles(
+      @RequestParam(required = false) String gender,
+      @RequestParam(required = false, name = "age_group") String ageGroup,
+      @RequestParam(required = false, name = "country_id") String countryId,
+      @RequestParam(required = false, name = "min_age") Integer minAge,
+      @RequestParam(required = false, name = "max_age") Integer maxAge,
+      @RequestParam(required = false, name = "min_gender_probability") Double minGenderProb,
+      @RequestParam(required = false, name = "min_country_probability") Double minCountryProb,
+      @RequestParam(required = false, name = "sort_by") String sortBy,
+      @RequestParam(required = false) String order,
+      HttpServletResponse response) throws IOException {
+
+    // Fetch all profiles matching the filters (using MAX_VALUE for page size)
+    Page<Profile> profilePage = profileService.getProfiles(
+        gender, ageGroup, countryId, minAge, maxAge, minGenderProb, minCountryProb,
+        sortBy, order, 1, Integer.MAX_VALUE);
+
+    // Set the required headers for CSV download
+    response.setContentType("text/csv");
+    response.setHeader("Content-Disposition", "attachment; filename=\"profiles.csv\"");
+
+    // Write the data to the response using Commons CSV
+    try (PrintWriter writer = response.getWriter();
+         CSVPrinter csvPrinter = new CSVPrinter(writer, 
+            CSVFormat.DEFAULT.builder().setHeader("ID", "Name", "Gender", "Age", "Country").build())) {
+         
+        for (Profile profile : profilePage.getContent()) {
+            csvPrinter.printRecord(
+                profile.getId(),
+                profile.getName(),
+                profile.getGender(),
+                profile.getAge(),
+                profile.getCountryId()
+            );
+        }
+    }
   }
 
   @GetMapping("/{id}")
