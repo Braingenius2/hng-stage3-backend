@@ -16,19 +16,51 @@ public class AuthController {
     this.authService = authService;
   }
 
-  // The CLI or Web Portal will call this after GitHub redirects back to them.
   @PostMapping("/github/callback")
-  public ResponseEntity<Map<String, String>> githubCallback(@RequestBody Map<String, String> request) {
-
+  public ResponseEntity<?> githubCallback(@RequestBody Map<String, String> request) {
     String code = request.get("code");
     String codeVerifier = request.get("code_verifier");
 
     if (code == null || code.isEmpty()) {
-      return ResponseEntity.badRequest().body(Map.of("error", "Authorization code is required"));
+      return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Authorization code is required"));
     }
 
-    Map<String, String> tokens = authService.processGithubCallback(code, codeVerifier);
+    try {
+      Map<String, String> tokens = authService.processGithubCallback(code, codeVerifier);
+      return ResponseEntity.ok(Map.of(
+          "status", "success",
+          "access_token", tokens.get("access_token"),
+          "refresh_token", tokens.get("refresh_token")));
+    } catch (Exception e) {
+      return ResponseEntity.badRequest().body(Map.of("status", "error", "message", e.getMessage()));
+    }
+  }
 
-    return ResponseEntity.ok(tokens);
+  @PostMapping("/refresh")
+  public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
+    String refreshToken = request.get("refresh_token");
+    if (refreshToken == null || refreshToken.isEmpty()) {
+      return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Refresh token is required"));
+    }
+
+    try {
+      Map<String, String> tokens = authService.refreshAccessToken(refreshToken);
+      return ResponseEntity.ok(Map.of(
+          "status", "success",
+          "access_token", tokens.get("access_token"),
+          "refresh_token", tokens.get("refresh_token")));
+    } catch (Exception e) {
+      // Return 401 Unauthorized if the token is invalid or expired
+      return ResponseEntity.status(401).body(Map.of("status", "error", "message", e.getMessage()));
+    }
+  }
+
+  @PostMapping("/logout")
+  public ResponseEntity<?> logout(@RequestBody Map<String, String> request) {
+    String refreshToken = request.get("refresh_token");
+    if (refreshToken != null && !refreshToken.isEmpty()) {
+      authService.logout(refreshToken);
+    }
+    return ResponseEntity.ok(Map.of("status", "success", "message", "Logged out successfully"));
   }
 }
