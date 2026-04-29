@@ -1,114 +1,72 @@
-# Profile Intelligence API (HNG Stage 1 + Stage 2)
+# Insighta Labs+ Backend (HNG Stage 3)
 
-This repository contains the same backend project across two milestones:
-- Stage 1 delivered core profile enrichment, storage, and CRUD endpoints.
-- Stage 2 upgrades the same service into a queryable intelligence engine with advanced filtering, sorting, pagination, and rule-based natural language search.
+The core intelligence engine for the Insighta Labs+ platform. This backend provides secure, versioned, and rate-limited API access to profile intelligence data.
 
-## Stack
-- Java 21
-- Spring Boot 3.4.0
-- Spring Data JPA (Specifications)
-- H2 (local) and PostgreSQL driver (runtime dependency)
-- Maven
-- Jackson
+## Key Features
+- **API Versioning**: Strict enforcement of `X-API-Version: 1`.
+- **Security**: Stateless JWT authentication with GitHub OAuth 2.0.
+- **RBAC**: Role-Based Access Control (Admin vs Analyst).
+- **Rate Limiting**: Intelligent throttling using Bucket4j (10 req/min for Auth, 60 req/min for Core API).
+- **Pagination**: Enterprise-grade standardized response shapes with HATEOAS-style links.
+- **Natural Language Search**: Query-to-filter parsing for analysts.
+- **CSV Export**: High-performance data export for reporting.
 
-## Public Base URL
-`https://hng-stage1-profile-production.up.railway.app`
+## Technology Stack
+- Java 21 & Spring Boot 3.4.0
+- Spring Security (Stateless JWT)
+- Spring Data JPA (H2/PostgreSQL)
+- Bucket4j (Rate Limiting)
+- Apache Commons CSV (Export)
 
-## Run Locally
-1. Ensure Java 21 is installed.
-2. Start the API:
-   - `./mvnw spring-boot:run` (Linux/macOS)
-   - `mvnw.cmd spring-boot:run` (Windows)
-3. API base URL: `http://localhost:8081`
+## Setup & Run
+1. **Prerequisites**: Java 21+ installed.
+2. **Environment Variables**:
+   - `GITHUB_CLIENT_ID`: Your GitHub OAuth Client ID.
+   - `GITHUB_CLIENT_SECRET`: Your GitHub OAuth Client Secret.
+   - `JWT_SECRET`: A secure base64 string for token signing.
+3. **Run**:
+   ```bash
+   ./mvnw spring-boot:run
+   ```
+4. **API Base**: `http://localhost:8081`
 
-## Project Evolution
+## API Documentation
 
-### Stage 1 (Foundation)
-- Create/enrich profiles from external APIs.
-- Persist normalized profile data in the database.
-- Expose core CRUD operations.
+### Required Headers
+All requests to `/api/**` and `/auth/**` must include:
+- `X-API-Version: 1`
+- `Authorization: Bearer <token>` (except for auth endpoints)
 
-### Stage 2 (Queryable Intelligence Engine)
-- Advanced multi-condition filtering on `/api/profiles`.
-- Sorting with `sort_by` + `order`.
-- Pagination with `page` and `limit` (max 50).
-- Rule-based natural language parsing on `/api/profiles/search`.
-- Standardized validation and error contracts.
+### Authentication
+- `POST /auth/github/callback`: Exchange GitHub code for JWT tokens.
+- `POST /auth/refresh`: Refresh expired access tokens.
+- `POST /auth/logout`: Revoke refresh tokens.
 
-## Seed Data
-- Startup seeding reads `src/main/resources/seed_profiles.json` (2026 records).
-- Seeding is idempotent by profile name and skips existing records.
+### Profiles API
+- `GET /api/profiles`: List with filters (`gender`, `age_group`, `country_id`, `min_age`, `max_age`).
+- `GET /api/profiles/search`: Natural language search (e.g., `?q=young males from nigeria`).
+- `GET /api/profiles/export`: Export profiles to CSV.
+- `POST /api/profiles`: Create new profile (**Admin only**).
+- `DELETE /api/profiles/{id}`: Delete profile (**Admin only**).
 
-## Endpoints
-
-### `GET /api/profiles`
-Advanced filtering, sorting, and pagination.
-
-Supported query parameters:
-- `gender`: `male | female`
-- `age_group`: `child | teenager | adult | senior`
-- `country_id`: 2-letter ISO code (for example `NG`, `KE`)
-- `min_age`, `max_age`
-- `min_gender_probability`, `min_country_probability` (0 to 1)
-- `sort_by`: `age | created_at | gender_probability | country_probability`
-- `order`: `asc | desc`
-- `page`: default `1` (must be `>= 1`)
-- `limit`: default `10`, max `50`
-
-Response shape:
+### Response Shape (Pagination)
 ```json
 {
-  "status": "success",
-  "page": 1,
-  "limit": 10,
-  "total": 2026,
-  "data": []
+  "data": [...],
+  "meta": {
+    "page": 1,
+    "size": 10,
+    "total_elements": 2026,
+    "total_pages": 203,
+    "links": {
+      "self": "/api/profiles?page=1&size=10",
+      "next": "/api/profiles?page=2&size=10"
+    }
+  }
 }
 ```
 
-### `GET /api/profiles/search`
-Rule-based natural language query parsing with pagination.
-
-Query params:
-- `q` (required, non-empty)
-- `page` (default `1`)
-- `limit` (default `10`, max `50`)
-
-Examples:
-- `young males` -> `gender=male`, `min_age=16`, `max_age=24`
-- `females above 30` -> `gender=female`, `min_age=30`
-- `people from angola` -> `country_id=AO`
-- `adult males from kenya` -> `gender=male`, `age_group=adult`, `country_id=KE`
-- `male and female teenagers above 17` -> `age_group=teenager`, `min_age=17`
-
-### Other endpoints
-- `POST /api/profiles`
-- `GET /api/profiles/{id}`
-- `DELETE /api/profiles/{id}`
-
-These CRUD endpoints are part of the Stage 1 baseline and remain available in Stage 2.
-
-## Validation and Error Contract
-Error response shape:
-```json
-{
-  "status": "error",
-  "message": "<error message>"
-}
-```
-
-Status code behavior:
-- `400`: missing/empty required parameter, invalid query parameters, or uninterpretable NL query
-- `422`: invalid parameter type
-- `404`: profile not found
-- `500`: server failure
-
-## Extra Compliance Notes
-- CORS allows `*` origin.
-- IDs are UUID v7.
-- `created_at` values are UTC ISO 8601.
-
-## Test
-Run:
-- `./mvnw test` or `mvnw.cmd test`
+## Compliance Notes
+- Rate limiting headers (`X-Rate-Limit-Remaining`, `X-Rate-Limit-Retry-After-Seconds`) are returned.
+- API versioning errors return `400 Bad Request` with code `unsupported_api_version`.
+- All errors follow the `{ "status": "error", "message": "..." }` format.
