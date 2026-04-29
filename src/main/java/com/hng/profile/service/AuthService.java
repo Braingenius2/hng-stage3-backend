@@ -27,6 +27,9 @@ public class AuthService {
   @Value("${github.client.secret:dummy_secret}")
   private String clientSecret;
 
+  @Value("${admin.github.ids:}")
+  private String adminIds;
+
   private final UserRepository userRepository;
   private final RefreshTokenRepository refreshTokenRepository;
   private final JwtTokenProvider tokenProvider;
@@ -49,7 +52,11 @@ public class AuthService {
         .orElseGet(() -> {
           User newUser = new User();
           newUser.setGithubId(githubId);
-          newUser.setRole(userRepository.count() == 0 ? "admin" : "analyst");
+          
+          // Determine role: explicit list check OR first user logic
+          boolean isAdmin = (adminIds != null && adminIds.contains(githubId)) || userRepository.count() == 0;
+          newUser.setRole(isAdmin ? "admin" : "analyst");
+          
           return newUser;
         });
 

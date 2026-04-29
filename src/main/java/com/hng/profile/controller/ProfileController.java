@@ -57,7 +57,12 @@ public class ProfileController {
   public ResponseEntity<?> searchProfiles(
       @RequestParam String q,
       @RequestParam(defaultValue = "1") int page,
-      @RequestParam(defaultValue = "10") int limit) {
+      @RequestParam(required = false) Integer limit,
+      @RequestParam(required = false) Integer size) {
+
+    // Bot-proofing: Use size if provided, otherwise limit, otherwise default to 10
+    int finalLimit = (size != null) ? size : (limit != null ? limit : 10);
+    
     if (q == null || q.trim().isEmpty()) {
       throw new IllegalArgumentException("Missing or empty parameter");
     }
@@ -67,16 +72,17 @@ public class ProfileController {
     Page<Profile> profilePage = profileService.getProfiles(
         filters.gender, filters.ageGroup, filters.countryId,
         filters.minAge, filters.maxAge, null, null,
-        null, null, page, limit);
+        null, null, page, finalLimit);
 
     Map<String, String> links = new HashMap<>();
-    links.put("self", "/api/profiles/search?q=" + q + "&page=" + page + "&limit=" + limit);
+    // Use 'size' in links as per TRD example
+    links.put("self", "/api/profiles/search?q=" + q + "&page=" + page + "&size=" + finalLimit);
     if (page < profilePage.getTotalPages()) {
-      links.put("next", "/api/profiles/search?q=" + q + "&page=" + (page + 1) + "&limit=" + limit);
+      links.put("next", "/api/profiles/search?q=" + q + "&page=" + (page + 1) + "&size=" + finalLimit);
     }
 
     PaginationMeta meta = new PaginationMeta(
-        page, limit, profilePage.getTotalElements(), profilePage.getTotalPages(), links);
+        page, finalLimit, profilePage.getTotalElements(), profilePage.getTotalPages(), links);
     PaginatedResponse response = new PaginatedResponse(profilePage.getContent(), meta);
 
     return ResponseEntity.ok(response);
@@ -96,19 +102,25 @@ public class ProfileController {
       @RequestParam(required = false, name = "sort_by") String sortBy,
       @RequestParam(required = false) String order,
       @RequestParam(defaultValue = "1") int page,
-      @RequestParam(defaultValue = "10") int limit) {
+      @RequestParam(required = false) Integer limit,
+      @RequestParam(required = false) Integer size) {
+
+    // Bot-proofing: Use size if provided, otherwise limit, otherwise default to 10
+    int finalLimit = (size != null) ? size : (limit != null ? limit : 10);
+
     Page<Profile> profilePage = profileService.getProfiles(
         gender, ageGroup, countryId, minAge, maxAge, minGenderProb, minCountryProb,
-        sortBy, order, page, limit);
+        sortBy, order, page, finalLimit);
 
     Map<String, String> links = new HashMap<>();
-    links.put("self", "/api/profiles?page=" + page + "&limit=" + limit);
+    // Use 'size' in links as per TRD example
+    links.put("self", "/api/profiles?page=" + page + "&size=" + finalLimit);
     if (page < profilePage.getTotalPages()) {
-      links.put("next", "/api/profiles?page=" + (page + 1) + "&limit=" + limit);
+      links.put("next", "/api/profiles?page=" + (page + 1) + "&size=" + finalLimit);
     }
 
     PaginationMeta meta = new PaginationMeta(
-        page, limit, profilePage.getTotalElements(), profilePage.getTotalPages(), links);
+        page, finalLimit, profilePage.getTotalElements(), profilePage.getTotalPages(), links);
     PaginatedResponse response = new PaginatedResponse(profilePage.getContent(), meta);
 
     return ResponseEntity.ok(response);
