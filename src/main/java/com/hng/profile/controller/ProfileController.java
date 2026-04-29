@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.hng.profile.model.Profile;
@@ -26,6 +27,7 @@ public class ProfileController {
   }
 
   @PostMapping
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<?> createProfile(@RequestBody Map<String, String> body) {
     String name = body.get("name");
     if (name == null || name.trim().isEmpty()) {
@@ -101,6 +103,7 @@ public class ProfileController {
   }
 
   @DeleteMapping("/{id}")
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<Void> deleteProfile(@PathVariable UUID id) {
     profileService.deleteProfile(id);
     return ResponseEntity.noContent().build();
