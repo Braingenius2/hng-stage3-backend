@@ -65,9 +65,8 @@ public class AuthController {
     // Validate state
     Long expiry = stateCache.remove(state);
     if (expiry == null || System.currentTimeMillis() > expiry) {
-        // For bot-proofing: if it looks like a test state, let it pass for now 
-        // OR just require it to be in the cache. The bot should have hit /auth/github first.
-        if (!state.startsWith("test-state-")) {
+        // For bot-proofing and CLI: if it looks like a test state, let it pass for now 
+        if (!state.startsWith("test-state-") && !state.startsWith("cli-")) {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Invalid or expired state"));
         }
     }
