@@ -17,10 +17,10 @@ public class AuthController {
   // Simple in-memory cache for OAuth state
   private static final Map<String, Long> stateCache = new ConcurrentHashMap<>();
   
-  @org.springframework.beans.factory.annotation.Value("${spring.security.oauth2.client.registration.github.client-id}")
+  @org.springframework.beans.factory.annotation.Value("${spring.security.oauth2.client.registration.github.client-id:Ov23lihfaiVSUib1dWhS}")
   private String clientId;
 
-  @org.springframework.beans.factory.annotation.Value("${spring.security.oauth2.client.registration.github.redirect-uri}")
+  @org.springframework.beans.factory.annotation.Value("${spring.security.oauth2.client.registration.github.redirect-uri:https://hng-stage3-web-ten.vercel.app/auth/callback}")
   private String redirectUri;
 
   public AuthController(AuthService authService) {
