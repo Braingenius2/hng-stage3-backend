@@ -20,6 +20,9 @@ public class AuthController {
   @org.springframework.beans.factory.annotation.Value("${spring.security.oauth2.client.registration.github.client-id}")
   private String clientId;
 
+  @org.springframework.beans.factory.annotation.Value("${spring.security.oauth2.client.registration.github.redirect-uri}")
+  private String redirectUri;
+
   public AuthController(AuthService authService) {
     this.authService = authService;
   }
@@ -37,6 +40,7 @@ public class AuthController {
     stateCache.put(finalState, System.currentTimeMillis() + 600000); // 10 min
     
     String redirectUrl = "https://github.com/login/oauth/authorize?client_id=" + clientId + 
+                         "&redirect_uri=" + java.net.URLEncoder.encode(redirectUri, "UTF-8") +
                          "&scope=read:user user:email&state=" + finalState;
     
     if (codeChallenge != null) {
