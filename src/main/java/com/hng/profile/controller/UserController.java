@@ -1,6 +1,6 @@
 package com.hng.profile.controller;
 
-import com.hng.profile.entity.User;
+import com.hng.profile.model.User;
 import com.hng.profile.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -55,7 +55,7 @@ public class UserController {
         return ResponseEntity.ok(Map.of(
             "github_id", user.getGithubId(),
             "role", user.getRole(),
-            "name", user.getName() != null ? user.getName() : user.getGithubId()
+            "name", user.getUsername() != null ? user.getUsername() : user.getGithubId()
         ));
     }
 }
