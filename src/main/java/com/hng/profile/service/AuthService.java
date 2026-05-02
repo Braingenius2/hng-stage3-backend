@@ -21,10 +21,10 @@ import java.util.Optional;
 @Service
 public class AuthService {
 
-  @Value("${spring.security.oauth2.client.registration.github.client-id}")
+  @Value("${github.client.id}")
   private String clientId;
-
-  @Value("${spring.security.oauth2.client.registration.github.client-secret}")
+  
+  @Value("${github.client.secret}")
   private String clientSecret;
 
   @Value("${admin.github.ids:}")
