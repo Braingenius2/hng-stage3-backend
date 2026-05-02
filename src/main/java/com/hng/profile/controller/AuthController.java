@@ -42,6 +42,7 @@ public class AuthController {
     String redirectUrl = "https://github.com/login/oauth/authorize?client_id=" + clientId + 
                          "&redirect_uri=" + java.net.URLEncoder.encode(redirectUri, "UTF-8") +
                          "&scope=read:user user:email&state=" + finalState;
+
     
     if (codeChallenge != null) {
         redirectUrl += "&code_challenge=" + codeChallenge + "&code_challenge_method=S256";
