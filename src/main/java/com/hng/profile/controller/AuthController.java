@@ -68,12 +68,17 @@ public class AuthController {
     }
 
     // Validate state
-    boolean isBypassState = (state != null && (state.startsWith("test-state-") || state.startsWith("cli-")));
-    Long expiry = stateCache.remove(state);
+    String trimmedState = state != null ? state.trim() : "";
+    boolean isBypassState = trimmedState.startsWith("test-state-") || trimmedState.startsWith("cli-");
+    Long expiry = stateCache.remove(trimmedState);
     
     if (expiry == null || System.currentTimeMillis() > expiry) {
         if (!isBypassState) {
-            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Invalid or expired state"));
+            return ResponseEntity.badRequest().body(Map.of(
+                "status", "error", 
+                "message", "Invalid or expired state",
+                "received_state", trimmedState
+            ));
         }
     }
 
